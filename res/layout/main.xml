@@ -4,23 +4,48 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-    <TextView
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/hello" />
-
-    <Button
-        android:id="@+id/button1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Report" 
-        android:onClick="onReport"/>
-
-    <Button
-        android:id="@+id/button2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Exit" 
-        android:onClick="onExit"/>
+    <LinearLayout
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content" >
+	    <Button
+	        android:id="@+id/report"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="Report" 
+	        android:onClick="onReport"/>
+	
+	    <Button
+	        android:id="@+id/start"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="start" 
+	        android:onClick="onStart"/>
+	    <Button
+	        android:id="@+id/stop"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="stop" 
+	        android:onClick="onStop"/>
+	    
+	    <Button
+	        android:id="@+id/exit"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="Exit" 
+	        android:onClick="onExit"/>
+    </LinearLayout>
     
+	<RelativeLayout
+	    android:id="@+id/maplayout"
+	    android:orientation="vertical"
+	    android:layout_width="fill_parent"
+	    android:layout_height="fill_parent" >
+	    <com.google.android.maps.MapView
+	        android:id="@+id/mapview"
+	        android:layout_width="fill_parent"
+	        android:layout_height="fill_parent"
+	        android:clickable="true"
+	        android:apiKey="0f3MolW3tuDuYM0gNSZx1Z_oYYkNoh1BM5Cagrg"
+	    />
+    </RelativeLayout>
 </LinearLayout>

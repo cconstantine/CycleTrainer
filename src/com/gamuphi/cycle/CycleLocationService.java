@@ -9,7 +9,10 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Binder;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +25,26 @@ public class CycleLocationService extends Service {
     
 	protected LocationManager locationManager;
 	protected LocationListener listener;
+
+    public class LocalBinder extends Binder {
+    	CycleLocationService getService() {
+            return CycleLocationService.this;
+        }
+    }
+
+    private final IBinder mBinder = new LocalBinder();
+    /**
+     * Handler of incoming messages from clients.
+     */
+    class IncomingHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+            }
+        }
+    final Messenger mMessenger = new Messenger(new IncomingHandler());
+    
+	public List<LocationListener> listeners = new ArrayList<LocationListener>();
 	
     @Override
     public void onCreate() { 
@@ -49,8 +72,16 @@ public class CycleLocationService extends Service {
                         location.getLongitude(), location.getLatitude(), location.getSpeed()
                 );
                 Logger.debug(message);
-                
-                CycleLocationService.locations.add(location);
+
+				synchronized(CycleLocationService.locations) { 
+					CycleLocationService.locations.add(location);
+				}
+				
+				synchronized(CycleLocationService.this.listeners) {
+					for (LocationListener l : CycleLocationService.this.listeners) {
+						l.onLocationChanged(location);
+					}
+				}
     			
     		}
 
@@ -59,6 +90,7 @@ public class CycleLocationService extends Service {
     			
     		}
         };
+        
         locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER, 
                 MINIMUM_TIME_BETWEEN_UPDATES, 
@@ -69,10 +101,16 @@ public class CycleLocationService extends Service {
     @Override
     public void onDestroy() {
     	Logger.debug("CycleLocationService::onDestroy");
-    	locationManager.removeUpdates(listener);
+    	this.pause();
     	
     }
     
+    public void pause() {
+    	if(listener != null) {
+    		locationManager.removeUpdates(listener);
+    		listener = null;
+    	}
+    }
     public static void report() {
     	Logger.debug("REPORTING");
     	for(Location location : locations) {
@@ -85,10 +123,20 @@ public class CycleLocationService extends Service {
     	}
     }
     
-	@Override
-	public IBinder onBind(Intent arg0) {
-		Logger.debug("CycleLocationService::onBind");
-		// TODO Auto-generated method stub
-		return new Binder();
-	}
+    public void addLocationListener(LocationListener l) {
+    	synchronized(this.listeners){
+    		this.listeners.add(l);
+    	}
+    }
+    
+    public void removeLocationListener(LocationListener l) {
+    	synchronized(this.listeners){
+    		this.listeners.remove(l);
+    	}
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
 }
