@@ -2,6 +2,7 @@ package com.gamuphi.cycle.services;
 
 
 import android.app.Service;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
@@ -11,12 +12,13 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.os.Messenger;
+import android.text.format.Time;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import com.gamuphi.cycle.providers.TripStore;
 import com.gamuphi.cycle.utils.Logger;
 
 public class CycleLocationService extends Service {
@@ -27,6 +29,7 @@ public class CycleLocationService extends Service {
     
 	protected LocationManager locationManager;
 	protected LocationListener listener;
+	protected boolean started = false;
 
     public class LocalBinder extends Binder {
     	public CycleLocationService getService() {
@@ -35,18 +38,7 @@ public class CycleLocationService extends Service {
     }
 
     private final IBinder mBinder = new LocalBinder();
-    /**
-     * Handler of incoming messages from clients.
-     */
-    class IncomingHandler extends Handler {
-        @Override
-        public void handleMessage(Message msg) {
-                super.handleMessage(msg);
-            }
-        }
-    final Messenger mMessenger = new Messenger(new IncomingHandler());
-    
-	public List<LocationListener> listeners = new ArrayList<LocationListener>();
+    final Messenger mMessenger = new Messenger(new Handler());
 	
     @Override
     public void onCreate() { 
@@ -59,6 +51,16 @@ public class CycleLocationService extends Service {
         super.onStart(intent, startId);
         
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+    }
+    
+    @Override
+    public void onDestroy() {
+    	Logger.debug("CycleLocationService::onDestroy");
+    	this.pause();
+    	
+    }
+    
+    synchronized public void start(final int trip_id) {
         listener = new LocationListener() {
             public void onProviderDisabled(String s) {
             	Logger.debug("Provider disabled by the user. GPS turned off");
@@ -75,16 +77,15 @@ public class CycleLocationService extends Service {
                 );
                 Logger.debug(message);
 
-				synchronized(CycleLocationService.locations) { 
-					CycleLocationService.locations.add(location);
-				}
-				
-				synchronized(CycleLocationService.this.listeners) {
-					for (LocationListener l : CycleLocationService.this.listeners) {
-						l.onLocationChanged(location);
-					}
-				}
-    			
+                Time t = new Time();
+                t.setToNow();
+        		ContentValues values = new ContentValues();
+        		values.put("trip_id", trip_id);
+        		values.put("lat", location.getLatitude());
+        		values.put("long", location.getLongitude());
+        		values.put("created_at", t.format3339(false));
+
+        		getContentResolver().insert(TripStore.LOCATION_CONTENT_URI, values);
     		}
 
     		public void onStatusChanged(String arg0, int arg1, Bundle arg2) {
@@ -100,20 +101,13 @@ public class CycleLocationService extends Service {
                 listener);
     }
     
-    @Override
-    public void onDestroy() {
-    	Logger.debug("CycleLocationService::onDestroy");
-    	this.pause();
-    	
-    }
-    
-    public void pause() {
-    	if(listener != null) {
+    synchronized public void pause() {
+    	if(started) {
     		locationManager.removeUpdates(listener);
-    		listener = null;
+    		started = false;
     	}
     }
-    public static void report() {
+    synchronized public static void report() {
     	Logger.debug("REPORTING");
     	for(Location location : locations) {
             String message = String.format(
@@ -121,22 +115,9 @@ public class CycleLocationService extends Service {
                     location.getLongitude(), location.getLatitude(), location.getSpeed()
             );
             Logger.debug(message);
-    		
     	}
     }
     
-    public void addLocationListener(LocationListener l) {
-    	synchronized(this.listeners){
-    		this.listeners.add(l);
-    	}
-    }
-    
-    public void removeLocationListener(LocationListener l) {
-    	synchronized(this.listeners){
-    		this.listeners.remove(l);
-    	}
-    }
-
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;

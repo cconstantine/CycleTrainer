@@ -16,7 +16,7 @@ public class HistoryActivity extends ListActivity {
         super.onCreate(savedInstanceState);
         
 
-        Cursor mCursor = this.getContentResolver().query(TripStore.CONTENT_URI, null, null, null, null);
+        Cursor mCursor = this.getContentResolver().query(TripStore.TRIP_CONTENT_URI, null, null, null, null);
         startManagingCursor(mCursor);
         
         ListAdapter adapter = new SimpleCursorAdapter(

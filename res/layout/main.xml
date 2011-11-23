@@ -46,7 +46,7 @@
 	    android:orientation="vertical"
 	    android:layout_width="fill_parent"
 	    android:layout_height="fill_parent" >
-	    <com.google.android.maps.MapView
+	    <com.gamuphi.cycle.views.CycleView
 	        android:id="@+id/mapview"
 	        android:layout_width="fill_parent"
 	        android:layout_height="fill_parent"
@@ -54,4 +54,5 @@
 	        android:apiKey="0f3MolW3tuDuYM0gNSZx1Z_oYYkNoh1BM5Cagrg"
 	    />
     </RelativeLayout>
+    
 </LinearLayout>

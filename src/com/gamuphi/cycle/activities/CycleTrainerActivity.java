@@ -4,15 +4,12 @@ import java.util.List;
 
 
 import com.gamuphi.cycle.services.CycleLocationService;
-import com.gamuphi.cycle.LocationFix;
 import com.gamuphi.cycle.utils.Logger;
-import com.gamuphi.cycle.overlays.PointOverlay;
+import com.gamuphi.cycle.views.CycleView;
 import com.gamuphi.cycle.R;
 import com.gamuphi.cycle.providers.TripStore;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
-import com.google.android.maps.MapView;
-import com.google.android.maps.Overlay;
 
 import android.content.ComponentName;
 import android.content.ContentValues;
@@ -20,8 +17,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
-import android.location.Location;
-import android.location.LocationListener;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.text.format.Time;
@@ -31,26 +27,16 @@ public class CycleTrainerActivity extends MapActivity {
 
 	private Intent service;
 
-    private List<Overlay> mapOverlays;
-    private PointOverlay itemizedOverlay;
     private CycleLocationService mBoundService;
     
-    private Time tripStart;
-    
+    private CycleView cycleView;
 
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
             mBoundService = ((CycleLocationService.LocalBinder)service).getService();
-            mBoundService.addLocationListener(new LocationListener() {
+            /*mBoundService.addLocationListener(new LocationListener() {
 
 				public void onLocationChanged(Location location) {
-		            GeoPoint point = new GeoPoint((int)(location.getLatitude()*1000000f), (int)(location.getLongitude()*1000000f));
-		            LocationFix overlayitem = new LocationFix(point, location.getAccuracy());
-		            itemizedOverlay.addLocation(overlayitem);
-		            Logger.debug("Adding item");
-
-		            MapView mapView = (MapView) findViewById(R.id.mapview);
-		            mapView.invalidate();
 		            
 				}
 
@@ -70,7 +56,7 @@ public class CycleTrainerActivity extends MapActivity {
 					
 				}
             	
-            });
+            });*/
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -85,15 +71,12 @@ public class CycleTrainerActivity extends MapActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         
-        MapView mapView = (MapView) findViewById(R.id.mapview);
-        mapView.setBuiltInZoomControls(true);
-        mapOverlays = mapView.getOverlays();
-        itemizedOverlay = new PointOverlay(mapView);     
-        mapOverlays.add(itemizedOverlay);
+        cycleView = (CycleView) findViewById(R.id.mapview);
         
         service = new Intent();
         service.setAction(CycleLocationService.class.getName());
 
+        startService(service);
         bindService(service, mConnection, Context.BIND_AUTO_CREATE);
         
     }
@@ -111,8 +94,7 @@ public class CycleTrainerActivity extends MapActivity {
     public void onReport(View v) {
         CycleLocationService.report();
 
-        
-        Cursor c = getContentResolver().query(TripStore.CONTENT_URI, null, null, null, null);
+        Cursor c = getContentResolver().query(TripStore.TRIP_CONTENT_URI, null, null, null, null);
         Logger.debug("has " + c.getCount() + "records");
         if(c.moveToFirst()) {
         	int created_at_idx = c.getColumnIndex("created_at");
@@ -128,24 +110,26 @@ public class CycleTrainerActivity extends MapActivity {
 		startActivity(i);
 	}
     public void onStart(View v) {
-        startService(service);
-        
-        tripStart = new Time();
+    	Uri trip_uri;
+    	int trip_id;
+
+        Time tripStart = new Time();
         tripStart.setToNow();
+        
+		ContentValues values = new ContentValues();
+		values.put("created_at", tripStart.format3339(false));
+
+		trip_uri = getContentResolver().insert(TripStore.TRIP_CONTENT_URI, values);
+    	trip_id = Integer.parseInt(trip_uri.getLastPathSegment());
+    	
+    	mBoundService.start(trip_id);
+    	cycleView.setTrip(trip_id);
     }
     
     public void onStop(View v) {
     	if (mBoundService != null) 
     		mBoundService.pause();
     	
-    	if(tripStart != null) {
-    		ContentValues values = new ContentValues();
-
-    		values.put("created_at", tripStart.format3339(false));
-
-    		getContentResolver().insert(TripStore.CONTENT_URI, values);
-
-    	}
     }
     public void onExit(View v) {
     	this.stopService(service);

@@ -2,6 +2,8 @@ package com.gamuphi.cycle.providers;
 
 import java.util.HashMap;
 
+import com.gamuphi.cycle.utils.Logger;
+
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -17,16 +19,25 @@ import android.net.Uri;
 public class TripStore extends ContentProvider {
 	public static final String AUTHORITY = "com.gamuphi.cycle.providers.TripStore";
 
-	public static final Uri CONTENT_URI = 
+	public static final Uri TRIP_CONTENT_URI = 
             Uri.parse("content://" + AUTHORITY + "/trips");
 	
+	public static final Uri LOCATION_CONTENT_URI = 
+            Uri.parse("content://" + AUTHORITY + "/locations");
+	
     private static final String DATABASE_NAME = "TripStore.db";
-    private static final int DATABASE_VERSION = 1;
-    private static final String TABLE_NAME = "trips";
+    private static final int DATABASE_VERSION = 4;
+    
+    private static final String TRIP_TABLE_NAME = "trips";
+    private static final String LOCATION_TABLE_NAME = "locations";
+    
     private static final UriMatcher sUriMatcher;
 
     private static final int TRIP = 1;
+    private static final int LOCATION = 2;
+    
     private static HashMap<String, String> tripsProjectionMap;
+    private static HashMap<String, String> locationsProjectionMap;
 
     private static class DatabaseHelper extends SQLiteOpenHelper {
         DatabaseHelper(Context context) {
@@ -35,12 +46,23 @@ public class TripStore extends ContentProvider {
         
         @Override
         public void onCreate(SQLiteDatabase db) {
-            db.execSQL("CREATE TABLE " + TABLE_NAME + " ( _id INTEGER PRIMARY KEY AUTOINCREMENT, created_at date);");
+            db.execSQL("CREATE TABLE " + TRIP_TABLE_NAME + " ( _id INTEGER PRIMARY KEY AUTOINCREMENT, created_at date);");
+            db.execSQL("CREATE TABLE " + LOCATION_TABLE_NAME + " ( " + 
+            					"_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            					"trip_id INTEGER, " +
+            					"created_at date, " + 
+            					"long DOUBLE, " +
+            					"lat DOUBLE, " + 
+            					"speed FLOAT, " + 
+             					"FOREIGN KEY(trip_id) REFERENCES " + TRIP_TABLE_NAME + "(_id) " +
+            					");");
+            db.execSQL("CREATE UNIQUE INDEX trip_location ON " + LOCATION_TABLE_NAME + " (trip_id, _id)");
         }
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+            db.execSQL("DROP TABLE IF EXISTS " + TRIP_TABLE_NAME);
+            db.execSQL("DROP TABLE IF EXISTS " + LOCATION_TABLE_NAME);
             onCreate(db);
         }
     }
@@ -53,7 +75,10 @@ public class TripStore extends ContentProvider {
         int count;
         switch (sUriMatcher.match(uri)) {
             case TRIP:
-                count = db.delete(TABLE_NAME, where, whereArgs);
+                count = db.delete(TRIP_TABLE_NAME, where, whereArgs);
+                break;
+            case LOCATION:
+                count = db.delete(LOCATION_TABLE_NAME, where, whereArgs);
                 break;
            default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
@@ -75,8 +100,22 @@ public class TripStore extends ContentProvider {
 
 	@Override
 	public Uri insert(Uri uri, ContentValues initialValues) {
-		if (sUriMatcher.match(uri) != TRIP) 
-		{ throw new IllegalArgumentException("Unknown URI " + uri); }
+		String table = null;
+		Uri content_uri = null;
+        switch (sUriMatcher.match(uri)) {
+	        case TRIP:
+	            table = TRIP_TABLE_NAME;
+	            content_uri = TRIP_CONTENT_URI;
+	            break;
+	        case LOCATION:
+	            table = LOCATION_TABLE_NAME;
+	            content_uri = LOCATION_CONTENT_URI;
+	            break;
+	
+	        default:
+	            throw new IllegalArgumentException("Unknown URI " + uri);
+        }
+        
         ContentValues values;
         if (initialValues != null) {
             values = new ContentValues(initialValues);
@@ -85,9 +124,11 @@ public class TripStore extends ContentProvider {
         }
 
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        long rowId = db.insert(TABLE_NAME, null, values);
+        long rowId = db.insert(table, null, values);
         if (rowId > 0) {
-            Uri noteUri = ContentUris.withAppendedId(CONTENT_URI, rowId);
+            Uri noteUri = ContentUris.withAppendedId(content_uri, rowId);
+        	Logger.debug("Inserted: " + noteUri.toString());
+
             getContext().getContentResolver().notifyChange(noteUri, null);
             return noteUri;
         }
@@ -107,8 +148,12 @@ public class TripStore extends ContentProvider {
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
         switch (sUriMatcher.match(uri)) {
             case TRIP:
-                qb.setTables(TABLE_NAME);
+                qb.setTables(TRIP_TABLE_NAME);
                 qb.setProjectionMap(tripsProjectionMap);
+                break;
+            case LOCATION:
+                qb.setTables(LOCATION_TABLE_NAME);
+                qb.setProjectionMap(locationsProjectionMap);
                 break;
  
             default:
@@ -128,7 +173,7 @@ public class TripStore extends ContentProvider {
         int count;
         switch (sUriMatcher.match(uri)) {
             case TRIP:
-                count = db.update(TABLE_NAME, values, selection, selectionArgs);
+                count = db.update(TRIP_TABLE_NAME, values, selection, selectionArgs);
                 break;
 
             default:
@@ -141,11 +186,20 @@ public class TripStore extends ContentProvider {
 
 	static {
 		sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
-		sUriMatcher.addURI(AUTHORITY, TABLE_NAME, TRIP);
+		sUriMatcher.addURI(AUTHORITY, TRIP_TABLE_NAME, TRIP);
+		sUriMatcher.addURI(AUTHORITY, LOCATION_TABLE_NAME, LOCATION);
 		
 		tripsProjectionMap = new HashMap<String, String>();
 		tripsProjectionMap.put("_id", "_id");
         tripsProjectionMap.put("created_at", "created_at");
+        
+		locationsProjectionMap = new HashMap<String, String>();
+		locationsProjectionMap.put("_id", "_id");
+		locationsProjectionMap.put("trip_id", "trip_id");
+		locationsProjectionMap.put("long", "long");
+		locationsProjectionMap.put("lat", "lat");
+		locationsProjectionMap.put("speed", "speed");
+		locationsProjectionMap.put("created_at", "created_at");
 
 	}
 }
