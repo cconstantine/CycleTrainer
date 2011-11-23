@@ -1,4 +1,4 @@
-package com.gamuphi.cycle;
+package com.gamuphi.cycle.services;
 
 
 import android.app.Service;
@@ -17,6 +17,8 @@ import android.os.Messenger;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.gamuphi.cycle.utils.Logger;
+
 public class CycleLocationService extends Service {
     private static final long MINIMUM_DISTANCE_CHANGE_FOR_UPDATES = 1; // in Meters
     private static final long MINIMUM_TIME_BETWEEN_UPDATES = 1000; // in Milliseconds
@@ -27,7 +29,7 @@ public class CycleLocationService extends Service {
 	protected LocationListener listener;
 
     public class LocalBinder extends Binder {
-    	CycleLocationService getService() {
+    	public CycleLocationService getService() {
             return CycleLocationService.this;
         }
     }

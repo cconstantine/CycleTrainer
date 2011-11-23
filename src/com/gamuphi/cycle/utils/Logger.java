@@ -1,4 +1,4 @@
-package com.gamuphi.cycle;
+package com.gamuphi.cycle.utils;
 
 import android.util.Log;
 

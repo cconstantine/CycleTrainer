@@ -1,4 +1,4 @@
-package com.gamuphi.cycle;
+package com.gamuphi.cycle.overlays;
 
 import java.util.ArrayList;
 import android.graphics.Canvas;
@@ -7,6 +7,9 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
 
+import com.gamuphi.cycle.LocationFix;
+import com.gamuphi.cycle.utils.LatitudeScaleCache;
+import com.gamuphi.cycle.utils.Logger;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;

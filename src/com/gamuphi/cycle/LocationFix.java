@@ -10,7 +10,7 @@ public class LocationFix extends OverlayItem {
 		this.accuracy = accuracy;
 	}
 	
-	float getAccuracy() {
+	public float getAccuracy() {
 		return accuracy;
 	}
 
