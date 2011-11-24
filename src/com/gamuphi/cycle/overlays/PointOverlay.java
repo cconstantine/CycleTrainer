@@ -44,6 +44,7 @@ public class PointOverlay extends Overlay {
         linePaint.setStrokeWidth(3);
         linePaint.setAlpha(79);
         
+        
 	} 
 	
 	@Override
@@ -95,5 +96,9 @@ public class PointOverlay extends Overlay {
 	
 	public void addLocation(LocationFix overlay) {
 	    mOverlays.add(overlay);
+	}
+
+	public void clear() {
+		mOverlays.clear();
 	}
 }

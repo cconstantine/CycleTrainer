@@ -1,14 +1,10 @@
 package com.gamuphi.cycle.activities;
 
-import java.util.List;
-
-
 import com.gamuphi.cycle.services.CycleLocationService;
 import com.gamuphi.cycle.utils.Logger;
 import com.gamuphi.cycle.views.CycleView;
 import com.gamuphi.cycle.R;
 import com.gamuphi.cycle.providers.TripStore;
-import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
 
 import android.content.ComponentName;
@@ -26,37 +22,14 @@ import android.view.View;
 public class CycleTrainerActivity extends MapActivity {
 
 	private Intent service;
-
     private CycleLocationService mBoundService;
-    
     private CycleView cycleView;
+    
+    private static int HISTORY_REQUEST = 1;
 
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
             mBoundService = ((CycleLocationService.LocalBinder)service).getService();
-            /*mBoundService.addLocationListener(new LocationListener() {
-
-				public void onLocationChanged(Location location) {
-		            
-				}
-
-				public void onProviderDisabled(String provider) {
-					// TODO Auto-generated method stub
-					
-				}
-
-				public void onProviderEnabled(String provider) {
-					// TODO Auto-generated method stub
-					
-				}
-
-				public void onStatusChanged(String provider, int status,
-						Bundle extras) {
-					// TODO Auto-generated method stub
-					
-				}
-            	
-            });*/
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -107,8 +80,9 @@ public class CycleTrainerActivity extends MapActivity {
     }
 	public void onHistory(View v) {
 		Intent i = new Intent(this, HistoryActivity.class);
-		startActivity(i);
+		this.startActivityForResult(i,  HISTORY_REQUEST);
 	}
+	
     public void onStart(View v) {
     	Uri trip_uri;
     	int trip_id;
@@ -142,4 +116,13 @@ public class CycleTrainerActivity extends MapActivity {
 		// TODO Auto-generated method stub
 		return false;
 	}
+	
+	@Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == HISTORY_REQUEST) {
+            if (resultCode == RESULT_OK) {
+            	cycleView.setTrip(data.getExtras().getLong("trip_id"));	
+            }
+        }
+    }
 }
