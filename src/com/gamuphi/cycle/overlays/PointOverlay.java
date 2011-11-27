@@ -7,9 +7,8 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
 
-import com.gamuphi.cycle.LocationFix;
+import com.gamuphi.cycle.models.LocationFix;
 import com.gamuphi.cycle.utils.LatitudeScaleCache;
-import com.gamuphi.cycle.utils.Logger;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
@@ -49,8 +48,6 @@ public class PointOverlay extends Overlay {
 	
 	@Override
 	public void draw(Canvas canvas, MapView mapView, boolean shadow) {
-		Logger.debug("draw: " + size());
-		Long then = System.currentTimeMillis();
 
         route = new Path();
         points = new Path();
@@ -79,11 +76,10 @@ public class PointOverlay extends Overlay {
 	        points.addCircle(point.x, point.y, radiusPixel, Path.Direction.CW);
 	        prevP = point;
 	    }
-	    Long now = System.currentTimeMillis();
-	    Logger.debug("Time to draw: " + (now - then) + "ms");
+
 	    canvas.drawPath(points, circlePaint);
 	    canvas.drawPath(route, linePaint);
-
+	    
 	    super.draw(canvas, mapView, false);
 	}
 

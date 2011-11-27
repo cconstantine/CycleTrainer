@@ -5,15 +5,15 @@
     android:orientation="vertical" >
 
     <LinearLayout
-	    android:layout_width="wrap_content"
-	    android:layout_height="wrap_content" >
-	    <Button
-	        android:id="@+id/report"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:orientation="horizontal"
+	    android:gravity="right" >
+	    <ImageView 
+	        android:id="@+id/traffic_light"
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
-	        android:text="Report" 
-	        android:onClick="onReport"/>
-	
+        	android:background="@drawable/red_light"/>
 	    <Button
 	        android:id="@+id/start"
 	        android:layout_width="wrap_content"
@@ -25,20 +25,26 @@
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
 	        android:text="stop" 
-	        android:onClick="onStop"/>
-	    
+	        android:onClick="onStop"
+	        android:visibility="gone" />	    
 	    <Button
 	        android:id="@+id/exit"
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
 	        android:text="Exit" 
 	        android:onClick="onExit"/>
-	    <Button
-	        android:id="@+id/history"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="History ->" 
-	        android:onClick="onHistory"/>
+	    <LinearLayout
+		    android:layout_width="fill_parent"
+		    android:layout_height="wrap_content"
+		    android:orientation="horizontal"
+		    android:gravity="right" >
+		    <Button
+		        android:id="@+id/history"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:text="History ->" 
+		        android:onClick="onHistory"/>
+	    </LinearLayout>
     </LinearLayout>
     
 	<RelativeLayout

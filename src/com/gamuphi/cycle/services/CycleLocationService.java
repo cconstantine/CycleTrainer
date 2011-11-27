@@ -15,8 +15,6 @@ import android.os.IBinder;
 import android.os.Messenger;
 import android.text.format.Time;
 
-import java.util.ArrayList;
-import java.util.List;
 
 import com.gamuphi.cycle.providers.TripStore;
 import com.gamuphi.cycle.utils.Logger;
@@ -24,13 +22,13 @@ import com.gamuphi.cycle.utils.Logger;
 public class CycleLocationService extends Service {
     private static final long MINIMUM_DISTANCE_CHANGE_FOR_UPDATES = 1; // in Meters
     private static final long MINIMUM_TIME_BETWEEN_UPDATES = 1000; // in Milliseconds
-
-    public static List<Location> locations = new ArrayList<Location>();
     
 	protected LocationManager locationManager;
 	protected LocationListener listener;
+	
 	protected boolean started = false;
-
+	protected long active_trip_id = 0;
+	
     public class LocalBinder extends Binder {
     	public CycleLocationService getService() {
             return CycleLocationService.this;
@@ -56,11 +54,12 @@ public class CycleLocationService extends Service {
     @Override
     public void onDestroy() {
     	Logger.debug("CycleLocationService::onDestroy");
-    	this.pause();
+    	this.stop();
     	
     }
     
-    synchronized public void start(final int trip_id) {
+    synchronized public void start(final long trip_id) {
+    	active_trip_id = trip_id;
         listener = new LocationListener() {
             public void onProviderDisabled(String s) {
             	Logger.debug("Provider disabled by the user. GPS turned off");
@@ -100,6 +99,13 @@ public class CycleLocationService extends Service {
                 MINIMUM_DISTANCE_CHANGE_FOR_UPDATES,
                 listener);
     }
+
+    synchronized public void stop() {
+    	if(started) {
+    		pause();
+    		active_trip_id = 0;
+    	}
+    }
     
     synchronized public void pause() {
     	if(started) {
@@ -107,16 +113,19 @@ public class CycleLocationService extends Service {
     		started = false;
     	}
     }
-    synchronized public static void report() {
-    	Logger.debug("REPORTING");
-    	for(Location location : locations) {
-            String message = String.format(
-                    "Longitude: %1$s,  Latitude: %2$sm Speed: %2$s",
-                    location.getLongitude(), location.getLatitude(), location.getSpeed()
-            );
-            Logger.debug(message);
-    	}
+    
+    synchronized public boolean isRunning() {
+    	return started;
     }
+    
+    synchronized public boolean isActive() {
+    	return active_trip_id != 0;
+    }
+    
+    synchronized public long getActiveTrip() {
+    	return active_trip_id;
+    }
+    
     
     @Override
     public IBinder onBind(Intent intent) {

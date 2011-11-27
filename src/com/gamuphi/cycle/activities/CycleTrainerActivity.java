@@ -4,20 +4,17 @@ import com.gamuphi.cycle.services.CycleLocationService;
 import com.gamuphi.cycle.utils.Logger;
 import com.gamuphi.cycle.views.CycleView;
 import com.gamuphi.cycle.R;
-import com.gamuphi.cycle.providers.TripStore;
+import com.gamuphi.cycle.models.Trip;
 import com.google.android.maps.MapActivity;
 
 import android.content.ComponentName;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.text.format.Time;
 import android.view.View;
+import android.widget.ImageView;
 
 public class CycleTrainerActivity extends MapActivity {
 
@@ -30,6 +27,10 @@ public class CycleTrainerActivity extends MapActivity {
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
             mBoundService = ((CycleLocationService.LocalBinder)service).getService();
+            if(mBoundService.isActive()) {
+            	Trip t = new Trip(CycleTrainerActivity.this, mBoundService.getActiveTrip());
+            	CycleTrainerActivity.this.setTrip(t);
+            }
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -64,45 +65,44 @@ public class CycleTrainerActivity extends MapActivity {
 		unbindService(mConnection);
 		super.onDestroy();
 	}
-    public void onReport(View v) {
-        CycleLocationService.report();
-
-        Cursor c = getContentResolver().query(TripStore.TRIP_CONTENT_URI, null, null, null, null);
-        Logger.debug("has " + c.getCount() + "records");
-        if(c.moveToFirst()) {
-        	int created_at_idx = c.getColumnIndex("created_at");
-        	Time t = new Time();
-        	do {
-        		t.parse3339(c.getString(created_at_idx));
-            	Logger.debug(t.format2445());
-        	} while(c.moveToNext());
-        }
-    }
+	
 	public void onHistory(View v) {
 		Intent i = new Intent(this, HistoryActivity.class);
 		this.startActivityForResult(i,  HISTORY_REQUEST);
 	}
 	
     public void onStart(View v) {
-    	Uri trip_uri;
-    	int trip_id;
-
-        Time tripStart = new Time();
-        tripStart.setToNow();
-        
-		ContentValues values = new ContentValues();
-		values.put("created_at", tripStart.format3339(false));
-
-		trip_uri = getContentResolver().insert(TripStore.TRIP_CONTENT_URI, values);
-    	trip_id = Integer.parseInt(trip_uri.getLastPathSegment());
+    	Trip t = new Trip(this);
     	
-    	mBoundService.start(trip_id);
-    	cycleView.setTrip(trip_id);
+    	mBoundService.start(t.getTripId());
+    	setTrip(t);
+    }
+    
+    public void setTrip(Trip t) {
+    	cycleView.setTrip(t);
+    	
+    	ImageView si = (ImageView) findViewById(R.id.traffic_light);
+    	si.setBackgroundResource(R.drawable.green_light);
+    	
+    	View b = findViewById(R.id.start);
+    	b.setVisibility(View.GONE);
+    	
+    	b = findViewById(R.id.stop);
+    	b.setVisibility(View.VISIBLE);
     }
     
     public void onStop(View v) {
     	if (mBoundService != null) 
     		mBoundService.pause();
+
+    	ImageView si = (ImageView) findViewById(R.id.traffic_light);
+    	si.setBackgroundResource(R.drawable.red_light);
+    	
+    	View b = findViewById(R.id.start);
+    	b.setVisibility(View.VISIBLE);
+    	
+    	b = findViewById(R.id.stop);
+    	b.setVisibility(View.GONE);
     	
     }
     public void onExit(View v) {
@@ -121,7 +121,7 @@ public class CycleTrainerActivity extends MapActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == HISTORY_REQUEST) {
             if (resultCode == RESULT_OK) {
-            	cycleView.setTrip(data.getExtras().getLong("trip_id"));	
+            	cycleView.setTrip(new Trip(this, data.getExtras().getLong("trip_id")));	
             }
         }
     }

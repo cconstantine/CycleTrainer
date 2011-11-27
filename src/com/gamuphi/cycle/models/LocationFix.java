@@ -1,4 +1,4 @@
-package com.gamuphi.cycle;
+package com.gamuphi.cycle.models;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.OverlayItem;
