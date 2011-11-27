@@ -28,8 +28,12 @@ public class StatsOverlay extends Overlay {
 	}
 	public void draw(Canvas canvas, MapView mapView, boolean shadow) {
 		if(this.trip != null) {
-			String t = String.format("Distance: %.1f", trip.getDistanceInMiles());
+			String t = String.format("Distance: %.1f mi.", trip.getDistanceInMiles());
 			canvas.drawText(t, 10, 25, paint);
+			t = String.format("Average Speed: %.1f mph", trip.getAvgSpeedInMph());
+			canvas.drawText(t, 10, 50, paint);
+			t = String.format("Speed: %.1f mph", trip.getSpeedInMph());
+			canvas.drawText(t, 10, 75, paint);
 		}
 	}
 }

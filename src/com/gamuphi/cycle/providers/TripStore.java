@@ -26,7 +26,7 @@ public class TripStore extends ContentProvider {
             Uri.parse("content://" + AUTHORITY + "/locations");
 	
     private static final String DATABASE_NAME = "TripStore.db";
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 8;
     
     private static final String TRIP_TABLE_NAME = "trips";
     private static final String LOCATION_TABLE_NAME = "locations";
@@ -46,16 +46,20 @@ public class TripStore extends ContentProvider {
         
         @Override
         public void onCreate(SQLiteDatabase db) {
+        	Logger.debug("TripStore.onCreate");
             db.execSQL("CREATE TABLE " + TRIP_TABLE_NAME + " ( _id INTEGER PRIMARY KEY AUTOINCREMENT, created_at date);");
-            db.execSQL("CREATE TABLE " + LOCATION_TABLE_NAME + " ( " + 
-            					"_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            					"trip_id INTEGER, " +
-            					"created_at date, " + 
-            					"long DOUBLE, " +
-            					"lat DOUBLE, " + 
-            					"speed FLOAT, " + 
-             					"FOREIGN KEY(trip_id) REFERENCES " + TRIP_TABLE_NAME + "(_id) " +
-            					");");
+            String c = "CREATE TABLE " + LOCATION_TABLE_NAME + " ( " + 
+					"_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+					"trip_id INTEGER, " +
+					"created_at date, " + 
+					"long DOUBLE, " +
+					"lat DOUBLE, " + 
+					"speed FLOAT, " + 
+					"accuracy FLOAT, " + 
+ 					"FOREIGN KEY(trip_id) REFERENCES " + TRIP_TABLE_NAME + "(_id) " +
+					");";
+            Logger.debug(c);
+            db.execSQL(c);
             db.execSQL("CREATE UNIQUE INDEX trip_location ON " + LOCATION_TABLE_NAME + " (trip_id, _id)");
         }
 

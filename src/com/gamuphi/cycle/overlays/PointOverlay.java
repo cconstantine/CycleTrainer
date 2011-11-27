@@ -9,10 +9,10 @@ import android.graphics.Point;
 
 import com.gamuphi.cycle.models.LocationFix;
 import com.gamuphi.cycle.utils.LatitudeScaleCache;
+import com.gamuphi.cycle.utils.Logger;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
-import com.google.android.maps.OverlayItem;
 import com.google.android.maps.Projection;
 
 public class PointOverlay extends Overlay {
@@ -48,7 +48,6 @@ public class PointOverlay extends Overlay {
 	
 	@Override
 	public void draw(Canvas canvas, MapView mapView, boolean shadow) {
-
         route = new Path();
         points = new Path();
 	    Projection projection = mapView.getProjection();
@@ -83,7 +82,7 @@ public class PointOverlay extends Overlay {
 	    super.draw(canvas, mapView, false);
 	}
 
-	protected OverlayItem createItem(int i) {
+	protected LocationFix createItem(int i) {
 	  return mOverlays.get(i);
 	}
 	public int size() {

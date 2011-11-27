@@ -17,6 +17,7 @@ import android.text.format.Time;
 
 import com.gamuphi.cycle.models.LocationFix;
 import com.gamuphi.cycle.providers.TripStore;
+import com.gamuphi.cycle.utils.Logger;
 import com.google.android.maps.GeoPoint;
 
 public class Trip {
@@ -44,21 +45,32 @@ public class Trip {
 				        		null, 
 				        		selectors, 
 				        		null, "_id ASC");
-
+				        
 				        if(c.moveToFirst()) {
 				        	int id_idx = c.getColumnIndex("_id");
-				        	//int created_at_idx = c.getColumnIndex("created_at");
+				        	int created_at_idx = c.getColumnIndex("created_at");
 				        	int lat_idx = c.getColumnIndex("lat");
 				        	int long_idx = c.getColumnIndex("long");
+				        	int accuracy_idx = c.getColumnIndex("accuracy");
+				        	Logger.debug("accuracy_idx: " + accuracy_idx);
 				        	//int speed_idx = c.getColumnIndex("speed");
 				        	do {
 				        		double lat = c.getDouble(lat_idx);
 				        		double lon = c.getDouble(long_idx);
+				        		float accuracy = 0;
+				        		if(accuracy_idx != -1) 
+				        			accuracy = c.getFloat(accuracy_idx);
+				        		
+				        		if(accuracy == 0)
+				        			accuracy = 50;
 				        		//float  speed = c.getFloat(speed_idx);
 				        		ListenerEntry.this.latest_location_id = c.getInt(id_idx);
 	
 				                GeoPoint point = new GeoPoint((int)(lat*1000000f), (int)(lon*1000000f));
-				                LocationFix overlayitem = new LocationFix(point, 50);
+				                
+				                Time t = new Time();
+				                t.parse3339(c.getString(created_at_idx));
+				                LocationFix overlayitem = new LocationFix(point, accuracy, t);
 				                locations.add(overlayitem);
 	
 				        	} while(c.moveToNext());
@@ -77,9 +89,14 @@ public class Trip {
 			t.execute(null, null, null);
 		}
 	}
+	
 	private long trip_id;
 	private Context context;
+	Time tripStart;
 	private float distance  = 0;
+	private float avgSpeed = 0;
+	private float speed = 0;
+	
 	
 	private Map<FixListener, ListenerEntry> listeners = new HashMap<FixListener, ListenerEntry>();
 	
@@ -95,28 +112,44 @@ public class Trip {
 		context.getContentResolver().registerContentObserver(TripStore.LOCATION_CONTENT_URI, true, observer );
 		
 		this.addListener(new FixListener() {
-			GeoPoint prev = null;
+			GeoPoint prevPoint = null;
+			Time prevTime = null;
 			public void newLocation(LocationFix l) {
-				if(prev == null) {
-					prev = l.getPoint();
-					return;
+				Time now = l.getCreatedAt();
+				Logger.debug("now: " + now.format3339(false));
+				if(prevPoint == null) {
+					prevPoint = l.getPoint();
+					prevTime = now;
+					tripStart = now;
+				} else {
+					float[] results = new float[1];
+					GeoPoint cur = l.getPoint();
+					Location.distanceBetween(
+							prevPoint.getLatitudeE6()/1E6, prevPoint.getLatitudeE6()/1E6,
+							cur.getLatitudeE6()/1E6, cur.getLatitudeE6()/1E6, results);
+					
+					distance += results[0];
+					Logger.debug("distance: " + distance);
+					
+					long delta = now.toMillis(false) - prevTime.toMillis(false);
+					Logger.debug("delta: " + delta);
+					speed = (results[0]* 0.6214f / 1000.0f)  / (delta / 1000f / 60f / 60f);
+
+					delta = now.toMillis(false) - tripStart.toMillis(false);
+					Logger.debug("delta: " + delta);
+					avgSpeed = getDistanceInMiles() / (delta / 1000f / 60f / 60f);
 				}
-				float[] results = new float[1];
-				GeoPoint cur = l.getPoint();
-				Location.distanceBetween(
-						prev.getLatitudeE6()/1E6, prev.getLatitudeE6()/1E6,
-						cur.getLatitudeE6()/1E6, cur.getLatitudeE6()/1E6, results);
-				distance += results[0];
+				prevTime = now;
 			}
-			public void latestEmitted() { }
+			public void latestEmitted() {
+			}
 		});
 	}
+	
 	public Trip(Context c) {
-		
-        Time tripStart = new Time();
-        tripStart.setToNow();
-        
 		ContentValues values = new ContentValues();
+		tripStart = new Time();
+		tripStart.setToNow();
 		values.put("created_at", tripStart.format3339(false));
 
     	Uri trip_uri;
@@ -141,6 +174,15 @@ public class Trip {
 	public float getDistanceInMiles() {
 		return (getDistanceInMeters() * 0.6214f / 1000.0f );
 	}
+	
+	public float getAvgSpeedInMph() {
+		return avgSpeed;
+	}
+
+	public float getSpeedInMph() {
+		return speed;
+	}
+	
 	public void emit() {
 		for(ListenerEntry l : Trip.this.listeners.values()) {
 			l.emit();

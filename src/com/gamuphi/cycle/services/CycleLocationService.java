@@ -82,6 +82,7 @@ public class CycleLocationService extends Service {
         		values.put("trip_id", trip_id);
         		values.put("lat", location.getLatitude());
         		values.put("long", location.getLongitude());
+        		values.put("accuracy", location.getAccuracy());
         		values.put("created_at", t.format3339(false));
 
         		getContentResolver().insert(TripStore.LOCATION_CONTENT_URI, values);

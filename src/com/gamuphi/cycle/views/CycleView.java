@@ -28,6 +28,7 @@ public class CycleView extends MapView {
         this.listener = new FixListener() {
         	public void newLocation(LocationFix l) {
 				CycleView.this.itemizedOverlay.addLocation(l);
+				CycleView.this.getController().animateTo(l.getPoint());  
 			}        	
         	public void latestEmitted() {
     			CycleView.this.invalidate();
@@ -35,6 +36,10 @@ public class CycleView extends MapView {
         };
         stats = new StatsOverlay();
         this.getOverlays().add(stats);
+        if(3 == this.getZoomLevel()) {
+        	this.getController().setZoom(16);
+        	invalidate();
+        }
 	}
 	
 	public CycleView(Context context, String apiKey) {
