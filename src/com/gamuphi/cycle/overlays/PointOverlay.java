@@ -9,7 +9,6 @@ import android.graphics.Point;
 
 import com.gamuphi.cycle.models.LocationFix;
 import com.gamuphi.cycle.utils.LatitudeScaleCache;
-import com.gamuphi.cycle.utils.Logger;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
